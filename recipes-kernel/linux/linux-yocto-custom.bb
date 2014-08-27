@@ -30,7 +30,7 @@
 inherit kernel
 require recipes-kernel/linux/linux-yocto.inc
 
-SRC_URI = "git://github.com:btolfa/kernel_tion_pro28.git;protocol=git;bareclone=1"
+SRC_URI = "git://github.com/btolfa/kernel_tion_pro28.git;protocol=git;bareclone=1"
 
 SRC_URI += "file://defconfig"
 
