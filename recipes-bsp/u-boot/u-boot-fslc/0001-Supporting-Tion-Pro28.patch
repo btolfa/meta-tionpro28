@@ -1,0 +1,141 @@
+From fd2fcb5928f41eede6c591c5675e38e95528ca04 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=D0=A2=D0=B5=D0=BD=D0=B3=D0=B8=D0=B7=20=D0=A8=D0=B0=D1=80?=
+ =?UTF-8?q?=D0=B0=D1=84=D0=B8=D0=B5=D0=B2?= <btolfa@gmail.com>
+Date: Mon, 15 Sep 2014 12:49:37 +0400
+Subject: [PATCH] Patch from www.zao-zeo.ru for supporting tion-pro28 by u-boot
+ 2014.01
+
+---
+ board/freescale/mx28evk/mx28evk.c | 55 +++++++++++++++++++--------------------
+ include/configs/mx28evk.h         |  1 +
+ 2 files changed, 28 insertions(+), 28 deletions(-)
+
+diff --git a/board/freescale/mx28evk/mx28evk.c b/board/freescale/mx28evk/mx28evk.c
+index 5005fe2..c189ca7 100644
+--- a/board/freescale/mx28evk/mx28evk.c
++++ b/board/freescale/mx28evk/mx28evk.c
+@@ -1,13 +1,9 @@
+ /*
+- * Freescale MX28EVK board
++ * ZAO ZEO Tion-Pro28 board
+  *
+- * (C) Copyright 2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2014 ZAO ZEO
+  *
+- * Author: Fabio Estevam <fabio.estevam@freescale.com>
+- *
+- * Based on m28evk.c:
+- * Copyright (C) 2011 Marek Vasut <marek.vasut@gmail.com>
+- * on behalf of DENX Software Engineering GmbH
++ * Based on mx28evk.c by Fabio Estevam <fabio.estevam@freescale.com>
+  *
+  * SPDX-License-Identifier:	GPL-2.0+
+  */
+@@ -42,17 +38,24 @@ int board_early_init_f(void)
+ 	mxs_set_sspclk(MXC_SSPCLK2, 160000, 0);
+ 
+ #ifdef	CONFIG_CMD_USB
++	/* On board USB-A connector is USB1 */
+ 	mxs_iomux_setup_pad(MX28_PAD_SSP2_SS1__USB1_OVERCURRENT);
+-	mxs_iomux_setup_pad(MX28_PAD_AUART2_RX__GPIO_3_8 |
++	mxs_iomux_setup_pad(MX28_PAD_AUART3_RTS__GPIO_3_15 |
++			MXS_PAD_4MA | MXS_PAD_3V3 | MXS_PAD_NOPULL);
++	gpio_direction_output(MX28_PAD_AUART3_RTS__GPIO_3_15, 1);
++
++	/* USB0 is connected via PLD*/
++	mxs_iomux_setup_pad(MX28_PAD_SSP2_SS2__USB0_OVERCURRENT);
++	mxs_iomux_setup_pad(MX28_PAD_AUART3_CTS__GPIO_3_14 |
+ 			MXS_PAD_4MA | MXS_PAD_3V3 | MXS_PAD_NOPULL);
+-	gpio_direction_output(MX28_PAD_AUART2_RX__GPIO_3_8, 1);
++	gpio_direction_output(MX28_PAD_AUART3_CTS__GPIO_3_14, 1);
+ #endif
+ 
+ 	/* Power on LCD */
+ 	gpio_direction_output(MX28_PAD_LCD_RESET__GPIO_3_30, 1);
+ 
+-	/* Set contrast to maximum */
+-	gpio_direction_output(MX28_PAD_PWM2__GPIO_3_18, 1);
++	/* Set backlight to maximum */
++	gpio_direction_output(MX28_PAD_PWM3__GPIO_3_28, 1);
+ 
+ 	return 0;
+ }
+@@ -64,32 +67,33 @@ int dram_init(void)
+ 
+ int board_init(void)
+ {
+-	/* Adress of boot parameters */
++	/* Address of boot parameters */
+ 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
+ 
++	/* Turn off user LED */
++	gpio_direction_output(MX28_PAD_PWM4__GPIO_3_29, 1);
++
+ 	return 0;
+ }
+ 
+ #ifdef	CONFIG_CMD_MMC
+-static int mx28evk_mmc_wp(int id)
++static int tion28_mmc_cd(int id)
+ {
+ 	if (id != 0) {
+ 		printf("MXS MMC: Invalid card selected (card id = %d)\n", id);
+ 		return 1;
+ 	}
+ 
+-	return gpio_get_value(MX28_PAD_SSP1_SCK__GPIO_2_12);
++	return !gpio_get_value(MX28_PAD_SSP0_DETECT__GPIO_2_9);
+ }
+ 
+ int board_mmc_init(bd_t *bis)
+ {
+-	/* Configure WP as input */
+-	gpio_direction_input(MX28_PAD_SSP1_SCK__GPIO_2_12);
+-
+-	/* Configure MMC0 Power Enable */
+-	gpio_direction_output(MX28_PAD_PWM3__GPIO_3_28, 0);
++	/* Configure CD as input */
++	gpio_direction_input(MX28_PAD_SSP0_DETECT__GPIO_2_9);
+ 
+-	return mxsmmc_initialize(bis, 0, mx28evk_mmc_wp, NULL);
++	/* Always powered, no write protection signal */
++	return mxsmmc_initialize(bis, 0, NULL, tion28_mmc_cd);
+ }
+ #endif
+ 
+@@ -106,17 +110,12 @@ int board_eth_init(bd_t *bis)
+ 	if (ret)
+ 		return ret;
+ 
+-	/* MX28EVK uses ENET_CLK PAD to drive FEC clock */
++	/* ENET_CLK PAD is used to drive FEC clock */
+ 	writel(CLKCTRL_ENET_TIME_SEL_RMII_CLK | CLKCTRL_ENET_CLK_OUT_EN,
+ 	       &clkctrl_regs->hw_clkctrl_enet);
+ 
+-	/* Power-on FECs */
+-	gpio_direction_output(MX28_PAD_SSP1_DATA3__GPIO_2_15, 0);
+-
+-	/* Reset FEC PHYs */
+-	gpio_direction_output(MX28_PAD_ENET0_RX_CLK__GPIO_4_13, 0);
+-	udelay(200);
+-	gpio_set_value(MX28_PAD_ENET0_RX_CLK__GPIO_4_13, 1);
++	/* FECs are always powered and not resettable (resets signals are not
++	 * connected) */
+ 
+ 	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE);
+ 	if (ret) {
+diff --git a/include/configs/mx28evk.h b/include/configs/mx28evk.h
+index 4fd67eb..666f01c 100644
+--- a/include/configs/mx28evk.h
++++ b/include/configs/mx28evk.h
+@@ -25,6 +25,7 @@
+ #define CONFIG_CMD_DATE
+ #define CONFIG_CMD_DHCP
+ #define CONFIG_CMD_FAT
++#define CONFIG_CMD_EXT2
+ #define CONFIG_CMD_GPIO
+ #define CONFIG_CMD_MII
+ #define CONFIG_CMD_MMC
+-- 
+1.9.1
+
