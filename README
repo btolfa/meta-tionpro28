@@ -12,49 +12,54 @@ This layer depends on:
   branch: master
 
   URI: git://git.openembedded.org/openembedded-core
-  layers: meta
-  branch: master
+  layers: oe
+  branch: daisy
 
-  URI: git://git.yoctoproject.org/xxxx
-  layers: xxxx
-  branch: master
+  URI: git://git.yoctoproject.org/poky
+  layers: poky
+  branch: daisy
 
+  URI: git://git.yoctoproject.org/meta-fsl-arm
+  layers: meta-fsl-arm
+  branch: daisy
+
+  URI: git@github.com:Freescale/fsl-community-bsp-base
+  layers: base
+  branch: daisy
 
 Patches
 =======
 
-Please submit any patches against this BSP to the Yocto mailing list
-(yocto@yoctoproject.org) and cc: the maintainer:
+Please submit any patches against this BSP to the me 
 
-Maintainer: XXX YYYYYY <xxx.yyyyyy@zzzzz.com>
+Maintainer: Tengiz Sharafiev <btolfa@gmail.com>
 
-Please see the meta-xxxx/MAINTAINERS file for more details.
+Please see the meta-tionpro28/MAINTAINERS file for more details.
 
 
 Table of Contents
 =================
 
   I. Building the meta-tionpro28 BSP layer
- II. Booting the images in /binary
+ II. Booting the images
 
 
 I. Building the meta-tionpro28 BSP layer
 ========================================
 
---- replace with specific instructions for your layer ---
+Follow https://github.com/Freescale/fsl-community-bsp-platform
 
-In order to build an image with BSP support for a given release, you
-need to download the corresponding BSP tarball from the 'Board Support
-Package (BSP) Downloads' page of the Yocto Project website.
+Download meta-tionpro28 distribution
 
-Having done that, and assuming you extracted the BSP tarball contents
-at the top-level of your yocto build tree, you can build a
-tionpro28 image by adding the location of the meta-tionpro28
+  cd ~/fsl-community-bsp/sources
+  git clone git@github.com:btolfa/meta-tionpro28.git
+
+You can build a tionpro28 image by adding the location of the meta-tionpro28
 layer to bblayers.conf, along with any other layers needed (to access
 common metadata shared between BSPs) e.g.:
 
-  yocto/meta-xxxx \
-  yocto/meta-xxxx/meta-tionpro28 \
+  ${BSPDIR}/sources/meta-tionpro28 \
+  ${BSPDIR}/sources/meta-xxxx \
 
 To enable the tionpro28 layer, add the tionpro28 MACHINE to local.conf:
 
@@ -62,57 +67,24 @@ To enable the tionpro28 layer, add the tionpro28 MACHINE to local.conf:
 
 You should then be able to build a tionpro28 image as such:
 
-  $ source oe-init-build-env
-  $ bitbake core-image-sato
+  $ source setup-environment build
+  $ bitbake core-image-minimal
 
 At the end of a successful build, you should have a live image that
-you can boot from a USB flash drive (see instructions on how to do
-that below, in the section 'Booting the images from /binary').
+you can boot from a SD.
 
-As an alternative to downloading the BSP tarball, you can also work
-directly from the meta-xxxx git repository.  For each BSP in the
-'meta-xxxx' repository, there are multiple branches, one corresponding
-to each major release starting with 'laverne' (0.90), in addition to
-the latest code which tracks the current master (note that not all
-BSPs are present in every release).  Instead of extracting a BSP
-tarball at the top level of your yocto build tree, you can
-equivalently check out the appropriate branch from the meta-xxxx
-repository at the same location.
+II. Booting the images
+
+This BSP contains bootable live images for sd card
+
+Under Linux, insert a SD card.  Assuming the SD card takes device /dev/sdf,
+use dd to copy the live image to it.  For example:
 
 
-II. Booting the images in /binary
-=================================
-
---- replace with specific instructions for your platform ---
-
-This BSP contains bootable live images, which can be used to directly
-boot Yocto off of a USB flash drive.
-
-Under Linux, insert a USB flash drive.  Assuming the USB flash drive
-takes device /dev/sdf, use dd to copy the live image to it.  For
-example:
-
-# dd if=core-image-sato-tionpro28-20101207053738.hddimg of=/dev/sdf
+$ sudo dd if=core-image-minimal-tionpro28.sdcard of=/dev/sdf bs=1M
 # sync
 # eject /dev/sdf
 
-This should give you a bootable USB flash device.  Insert the device
-into a bootable USB socket on the target, and power on.  This should
-result in a system booted to the Sato graphical desktop.
-
-If you want a terminal, use the arrows at the top of the UI to move to
-different pages of available applications, one of which is named
-'Terminal'.  Clicking that should give you a root terminal.
-
-If you want to ssh into the system, you can use the root terminal to
-ifconfig the IP address and use that to ssh in.  The root password is
-empty, so to log in type 'root' for the user name and hit 'Enter' at
-the Password prompt: and you should be in.
+This should give you a bootable SD card.  Insert the device
 
 ----
-
-If you find you're getting corrupt images on the USB (it doesn't show
-the syslinux boot: prompt, or the boot: prompt contains strange
-characters), try doing this first:
-
-# dd if=/dev/zero of=/dev/sdf bs=1M count=512
