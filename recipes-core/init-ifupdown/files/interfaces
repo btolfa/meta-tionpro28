@@ -9,6 +9,13 @@ auto eth0
 iface eth0 inet dhcp
 hwaddress ether 40:D8:55:07:0C:9A
 
+# CANBus setup
+auto can0
+iface can0 inet manual
+    pre-up /sbin/ip link set $IFACE type can bitrate 125000 triple-sampling on
+    up /sbin/ifconfig $IFACE up
+    down /sbin/ifconfig $IFACE down
+
 #iface eth1 inet dhcp
 #pre-up sleep 1
 #hwaddress ether 40:D8:55:07:0C:9B
