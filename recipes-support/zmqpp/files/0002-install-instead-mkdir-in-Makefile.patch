@@ -1,0 +1,35 @@
+From 6620b7147396c906e4d5e355935f50134169532a Mon Sep 17 00:00:00 2001
+From: Tengiz Sharafiev <btolfa@gmail.com>
+Date: Sat, 8 Nov 2014 10:51:59 +0300
+Subject: [PATCH 2/2] install instead mkdir in Makefile
+
+---
+ Makefile | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 63aad5d..97c05f9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -7,7 +7,7 @@ CPPFLAGS =
+ CXXFLAGS =
+ LDFLAGS  =
+ 
+-PREFIX = /usr/local
++PREFIX = /usr
+ BINDIR = $(DESTDIR)$(PREFIX)/bin
+ LIBDIR = $(DESTDIR)$(PREFIX)/lib
+ INCLUDEDIR = $(DESTDIR)$(PREFIX)/include
+@@ -123,7 +123,8 @@ all: $(LIBRARY_SHARED) $(LIBRARY_ARCHIVE) $(CLIENT_TARGET)
+ check: $(LIBRARY_SHARED) $(LIBRARY_ARCHIVE) test
+ 
+ install:
+-	mkdir -p $(INCLUDEDIR)/$(LIBRARY_DIR)
++	install -d $(INCLUDEDIR)/$(LIBRARY_DIR)
++	install -d $(LIBDIR)
+ 	install -m 644 $(ALL_LIBRARY_INCLUDES) $(INCLUDEDIR)/$(LIBRARY_DIR)
+ 	install -m 755 $(BUILD_PATH)/$(LIBRARY_SHARED).$(VERSION_MAJOR) $(LIBDIR)/$(LIBRARY_SHARED).$(APP_VERSION)
+ 	ln -sf $(LIBRARY_SHARED).$(APP_VERSION) $(LIBDIR)/$(LIBRARY_SHARED).$(VERSION_MAJOR)
+-- 
+2.1.3
+
