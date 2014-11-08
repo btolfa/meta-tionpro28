@@ -7,7 +7,8 @@ DEPENDS = "zeromq"
 
 SRCREV = "18c4e5ff2fdbdae214adeddb9607c34ce7986798"
 SRC_URI = "git://github.com/zeromq/zmqpp.git;branch=develop\
-    file://0001-Fix-Makefile.patch"
+    file://0001-Fix-Makefile.patch\
+    file://0002-install-instead-mkdir-in-Makefile.patch"
 
 S = "${WORKDIR}/git"
 

@@ -1,8 +1,9 @@
-From fa80fca590b6293d2d89c778124c741bd7772782 Mon Sep 17 00:00:00 2001
+From 93fa6e478f24e538da64728ff439f07a0d8a8d88 Mon Sep 17 00:00:00 2001
 From: Tengiz Sharafiev <btolfa@gmail.com>
 Date: Fri, 31 Oct 2014 14:24:16 +0300
-Subject: [PATCH] Fix Makefile
+Subject: [PATCH 1/2] Fix Makefile
 
+Signed-off-by: Tengiz Sharafiev <btolfa@gmail.com>
 ---
  Makefile | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
@@ -21,5 +22,5 @@ index fdf2870..63aad5d 100644
  
  CUSTOM_INCLUDE_PATH =
 -- 
-2.1.1
+2.1.3
 
