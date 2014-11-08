@@ -1,0 +1,25 @@
+From fa80fca590b6293d2d89c778124c741bd7772782 Mon Sep 17 00:00:00 2001
+From: Tengiz Sharafiev <btolfa@gmail.com>
+Date: Fri, 31 Oct 2014 14:24:16 +0300
+Subject: [PATCH] Fix Makefile
+
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index fdf2870..63aad5d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -42,7 +42,7 @@ LIBRARY_PATH = $(SRC_PATH)/$(LIBRARY_DIR)
+ CLIENT_PATH  = $(SRC_PATH)/$(CLIENT_DIR)
+ TESTS_PATH   = $(SRC_PATH)/$(TESTS_DIR)
+ 
+-BUILD_PATH   = ./build/$(CONFIG)-$(CXX)
++BUILD_PATH   = ./build
+ OBJECT_PATH  = $(BUILD_PATH)/obj
+ 
+ CUSTOM_INCLUDE_PATH =
+-- 
+2.1.1
+
