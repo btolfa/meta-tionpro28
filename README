@@ -13,19 +13,19 @@ This layer depends on:
 
   URI: git://git.openembedded.org/openembedded-core
   layers: oe
-  branch: daisy
+  branch: dizzy
 
   URI: git://git.yoctoproject.org/poky
   layers: poky
-  branch: daisy
+  branch: dizzy
 
   URI: git://git.yoctoproject.org/meta-fsl-arm
   layers: meta-fsl-arm
-  branch: daisy
+  branch: dizzy
 
   URI: git@github.com:Freescale/fsl-community-bsp-base
   layers: base
-  branch: daisy
+  branch: dizzy
 
 Patches
 =======
@@ -33,9 +33,6 @@ Patches
 Please submit any patches against this BSP to the me 
 
 Maintainer: Tengiz Sharafiev <btolfa@gmail.com>
-
-Please see the meta-tionpro28/MAINTAINERS file for more details.
-
 
 Table of Contents
 =================
