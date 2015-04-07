@@ -1,0 +1,514 @@
+From 557b8208710bac50e71958f30a83de958ec54dfc Mon Sep 17 00:00:00 2001
+From: Michael Krummsdorf <michael.krummsdorf@tqs.de>
+Date: Thu, 21 Mar 2013 17:05:07 +0100
+Subject: [PATCH 1/4] net/fec: prevent dobule restart of interface on FDX/HDX
+ change
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Backport of
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/\
+commit/drivers/net/ethernet/freescale/fec.c?id=6ea0722fb8cdeacc774733c259d33bf45529e91b
+
+Upon detection of a FDX/HDX change the interface is restarted twice.
+
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tengiz Sharafiev <btolfa@gmail.com>
+---
+ drivers/net/fec.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/fec.c b/drivers/net/fec.c
+index 20f0242..4609244 100644
+--- a/drivers/net/fec.c
++++ b/drivers/net/fec.c
+@@ -858,6 +858,8 @@ static void fec_enet_adjust_link(struct net_device *dev)
+ 	if (phy_dev->link) {
+ 		if (fep->full_duplex != phy_dev->duplex) {
+ 			fec_restart(dev, phy_dev->duplex);
++			/* prevent unnecessary second fec_restart() below */
++			fep->link = phy_dev->link;
+ 			status_change = 1;
+ 		}
+ 	}
+-- 
+2.3.5
+
+
+From ff3c09ce34a57099693cb3194474b232c9a917b0 Mon Sep 17 00:00:00 2001
+From: Michael Krummsdorf <michael.krummsdorf@tqs.de>
+Date: Fri, 22 Mar 2013 15:24:09 +0100
+Subject: [PATCH 2/4] net: fec: restart the FEC when PHY speed changes
+
+Backport of
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/\
+commit/drivers/net/ethernet/freescale/fec.c?id=d97e74976982a35168c7f131cce0d93537337a26
+
+Proviously we would only restart the FEC when PHY link or duplex state
+changed. PHY does not always bring down the link for speed changes, in
+which case we would not detect any change and keep FEC running.
+
+Switching link speed without restarting the FEC results in the FEC being
+stuck in an indefinite state, generating error conditions for every
+packet.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tengiz Sharafiev <btolfa@gmail.com>
+---
+ drivers/net/fec.c | 37 ++++++++++++++++++++-----------------
+ 1 file changed, 20 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/net/fec.c b/drivers/net/fec.c
+index 4609244..63dd62a 100644
+--- a/drivers/net/fec.c
++++ b/drivers/net/fec.c
+@@ -195,6 +195,7 @@ struct fec_enet_private {
+ 	int	index;
+ 	int	link;
+ 	int	full_duplex;
++	int	speed;
+ 	struct  completion mdio_done;
+ 
+ 	struct	fec_ptp_private *ptp_priv;
+@@ -854,21 +855,10 @@ static void fec_enet_adjust_link(struct net_device *dev)
+ 		goto spin_unlock;
+ 	}
+ 
+-	/* Duplex link change */
+ 	if (phy_dev->link) {
+-		if (fep->full_duplex != phy_dev->duplex) {
+-			fec_restart(dev, phy_dev->duplex);
+-			/* prevent unnecessary second fec_restart() below */
++		if (!fep->link) {
+ 			fep->link = phy_dev->link;
+ 			status_change = 1;
+-		}
+-	}
+-
+-	/* Link on or off change */
+-	if (phy_dev->link != fep->link) {
+-		fep->link = phy_dev->link;
+-		if (phy_dev->link) {
+-			fec_restart(dev, phy_dev->duplex);
+ 
+ 			/* if link becomes up and tx be stopped, start it */
+ 			if (netif_queue_stopped(dev)) {
+@@ -876,16 +866,29 @@ static void fec_enet_adjust_link(struct net_device *dev)
+ 				netif_wake_queue(dev);
+ 			}
+ 		}
+-		else
++
++		if (fep->full_duplex != phy_dev->duplex)
++			status_change = 1;
++
++		if (phy_dev->speed != fep->speed) {
++			fep->speed = phy_dev->speed;
++			status_change = 1;
++		}
++
++		/* if any of the above changed restart the FEC */
++		if (status_change) {
++			fec_restart(dev, phy_dev->duplex);
++			phy_print_status(phy_dev);
++		}
++	} else {
++		if (fep->link) {
+ 			fec_stop(dev);
+-		status_change = 1;
++			phy_print_status(phy_dev);
++		}
+ 	}
+ 
+ spin_unlock:
+ 	spin_unlock_irqrestore(&fep->hw_lock, flags);
+-
+-	if (status_change)
+-		phy_print_status(phy_dev);
+ }
+ 
+ static int fec_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
+-- 
+2.3.5
+
+
+From a3c37b947806a9639287dfad55efddef9cd4f35d Mon Sep 17 00:00:00 2001
+From: Tengiz Sharafiev <btolfa@gmail.com>
+Date: Tue, 7 Apr 2015 12:49:05 +0300
+Subject: [PATCH 3/4] [PATCH] ARM: mx28: ignore enet link down for a time
+
+This patch fixes an ethernet issue where
+Link up/down loops occured on mx28 platforms.
+
+A new link status of the ethernet phy
+is reported as "up" for a specified period of time
+until it may drop to "down" again.
+
+--------------------------------------------------
+
+Upon detection of a new ethernet connection (link)
+the fec driver resets the MX28 FEC unit to setup
+the registers for e.g. DMA to the new link.
+
+During that fec-reset the ENET_CLK to the PHY
+drops to 25 MHz (MII Mode) even if 50 MHz (RMII Mode)
+is configured.
+
+This violates PHY specification as it generates
+internal and external timing from that clock.
+
+The fec driver also resets the PHY via a GPIO
+to have it re-set itself on completion of a new fec setup.
+
+This PHY reset causes it to lose link.
+
+While automatically reestablishing the link the PHY gets
+polled by the phy state machine for a new link.
+
+If this link is found by the PHY before polled by the
+state machine: everything is fine. "Link Up" is reported.
+If not, "Link down" is reported and when the PHY
+finally gets link, the fec/phy resets start again.
+
+Signed-off-by: Michael Krummsdorf <michael.krummsdorf@tqs.de>
+---
+ arch/arm/mach-mx28/Kconfig   |  8 ++++++++
+ drivers/net/fec.c            | 12 ++++++++++++
+ drivers/net/phy/phy_device.c |  9 +++++++++
+ include/linux/phy.h          |  5 +++++
+ 4 files changed, 34 insertions(+)
+
+diff --git a/arch/arm/mach-mx28/Kconfig b/arch/arm/mach-mx28/Kconfig
+index d31a140..796ebba 100644
+--- a/arch/arm/mach-mx28/Kconfig
++++ b/arch/arm/mach-mx28/Kconfig
+@@ -24,6 +24,14 @@ config MEM_mDDR
+ 	help
+ 	  Say Y to select mDDR memory
+ 
++config MX28_ENET_ISSUE
++    bool "Enable MX28 enet issue fix - Read help!"
++    depends on ARCH_MX28
++    help
++        Say Y to enable a fix for link up/down issue on mx28.
++        It is STRONGLY! recommended to always have external oscillators
++        provide the clock to ENET PHY and FEC unit.        
++
+ config MX28_SUSPEND_TO_RAM
+ 	bool "support MX28 suspend-to RAM feature"
+   default n
+diff --git a/drivers/net/fec.c b/drivers/net/fec.c
+index 63dd62a..8994baf 100644
+--- a/drivers/net/fec.c
++++ b/drivers/net/fec.c
+@@ -212,6 +212,8 @@ struct fec_enet_private {
+ #define FEC_NAPI_ENABLE FALSE
+ #endif
+ 
++#define FEC_LINK_TIMEOUT 5000
++
+ /*
+  * Define the fixed address of the FEC hardware.
+  */
+@@ -876,10 +878,20 @@ static void fec_enet_adjust_link(struct net_device *dev)
+ 		}
+ 
+ 		/* if any of the above changed restart the FEC */
++#ifdef CONFIG_MX28_ENET_ISSUE
++        if ((status_change) && (!fep->phy_dev->reset_done)) {
++            fep->phy_dev->reset_done = 1;              
++            fep->phy_dev->reset_timeout = jiffies +
++                msecs_to_jiffies(FEC_LINK_TIMEOUT);
++            fec_restart(dev, phy_dev->duplex);
++            phy_print_status(phy_dev);
++        }
++#else
+ 		if (status_change) {
+ 			fec_restart(dev, phy_dev->duplex);
+ 			phy_print_status(phy_dev);
+ 		}
++#endif
+ 	} else {
+ 		if (fep->link) {
+ 			fec_stop(dev);
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 1a99bb2..3d9c25bc 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -722,10 +722,19 @@ int genphy_update_link(struct phy_device *phydev)
+ 	if (status < 0)
+ 		return status;
+ 
++#ifdef CONFIG_MX28_ENET_ISSUE
++	if ((phydev->reset_done) && time_before(jiffies,phydev->reset_timeout)){
++		phydev->link = 1;
++	} else {
++		phydev->link = (status & BMSR_LSTATUS)?1:0;
++		phydev->reset_done = 0;
++	}
++#else
+ 	if ((status & BMSR_LSTATUS) == 0)
+ 		phydev->link = 0;
+ 	else
+ 		phydev->link = 1;
++#endif
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index d63736a..b88fa1c 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -330,6 +330,11 @@ struct phy_device {
+ 	void (*adjust_link)(struct net_device *dev);
+ 
+ 	void (*adjust_state)(struct net_device *dev);
++
++#ifdef CONFIG_MX28_ENET_ISSUE
++	int reset_done;
++	unsigned long reset_timeout;
++#endif
+ };
+ #define to_phy_device(d) container_of(d, struct phy_device, dev)
+ 
+-- 
+2.3.5
+
+
+From f122d2ab62f502bcc17369543b4c490b53dbd7c9 Mon Sep 17 00:00:00 2001
+From: Tengiz Sharafiev <btolfa@gmail.com>
+Date: Tue, 7 Apr 2015 13:13:51 +0300
+Subject: [PATCH 4/4] ARM: mx28: run ethernet phy in specifiation timing
+
+The ethernet PHY LAN8720a on MBa28 must be run with a
+constant clock as required by specification.
+
+In RMII mode the clock frequency is 50 MHz which gets
+reset to 25 MHz during a FEC reset on the cpu.
+
+This patch sets the PHY into hardreset during that
+clock change.
+
+Signed-off-by: Michael Krummsdorf <michael.krummsdorf@tqs.de>
+---
+ arch/arm/mach-mx28/device.c       | 16 ++++++++++++
+ arch/arm/mach-mx28/mx28evk_pins.c | 41 +++++++++++++++++++++++++++++
+ drivers/net/fec.c                 | 55 +++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 110 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-mx28/device.c b/arch/arm/mach-mx28/device.c
+index da8af12..17911b6 100644
+--- a/arch/arm/mach-mx28/device.c
++++ b/arch/arm/mach-mx28/device.c
+@@ -821,16 +821,32 @@ static struct resource fec1_resource[] = {
+ 	},
+ };
+ 
++#ifdef CONFIG_MX28_ENET_ISSUE
+ extern int mx28evk_enet_gpio_init(void);
++extern int mx28evk_enet_gpio_assert(void);
+ static struct fec_platform_data fec_pdata0 = {
+ 	.phy = PHY_INTERFACE_MODE_RMII,
+ 	.init = mx28evk_enet_gpio_init,
++	.uninit = mx28evk_enet_gpio_assert,
+ };
+ 
+ static struct fec_platform_data fec_pdata1 = {
+ 	.phy = PHY_INTERFACE_MODE_RMII,
+ 	.init = mx28evk_enet_gpio_init,
++	.uninit = mx28evk_enet_gpio_assert,
+ };
++#else
++extern int mx28evk_enet_gpio_init(void);
++static struct fec_platform_data fec_pdata0 = {
++	.phy = PHY_INTERFACE_MODE_RMII,
++	.init = mx28evk_enet_gpio_init,
++};
++
++static struct fec_platform_data fec_pdata1 = {
++	.phy = PHY_INTERFACE_MODE_RMII,
++	.init = mx28evk_enet_gpio_init,
++};
++#endif
+ 
+ static void __init mx28_init_fec(void)
+ {
+diff --git a/arch/arm/mach-mx28/mx28evk_pins.c b/arch/arm/mach-mx28/mx28evk_pins.c
+index 63d68dc..6cb71b0 100644
+--- a/arch/arm/mach-mx28/mx28evk_pins.c
++++ b/arch/arm/mach-mx28/mx28evk_pins.c
+@@ -1228,6 +1228,41 @@ static struct pin_desc mx28evk_spi_pins[] = {
+ 
+ #if defined(CONFIG_FEC) || defined(CONFIG_FEC_MODULE)\
+ 	|| defined(CONFIG_FEC_L2SWITCH)
++
++#ifdef CONFIG_MX28_ENET_ISSUE
++int mx28evk_enet_gpio_assert(void)
++{
++	gpio_set_value_cansleep(MXS_PIN_TO_GPIO(PINID_ENET0_RX_CLK), 0);
++	return 0;
++}
++int mx28evk_enet_gpio_init(void)
++{
++	/*
++	 * reset phy
++	 * if init called after assert() called
++	 * nRST is already low and the following does nothing,
++	 * otherwise it asserts nRST to perform valid reset
++	 */
++	gpio_set_value_cansleep(MXS_PIN_TO_GPIO(PINID_ENET0_RX_CLK), 0);
++
++	/* LAN8720a minimum reset hold time 100us */
++	udelay(200);
++	gpio_set_value_cansleep(MXS_PIN_TO_GPIO(PINID_ENET0_RX_CLK), 1);
++
++	/* LAN8720a output drive after nRST deassertion after max 800ns */
++	udelay(1);
++
++	/*
++	 * FIXME: Additional delay needed during fec_enet_adjust_link()
++	 * or any of its subfunctions or else link won't be reported.
++	 * Tricky: enabled trace printks also produce that delay
++	 */
++	mdelay(1);
++
++	return 0;
++}
++#else
++
+ int mx28evk_enet_gpio_init(void)
+ {
+ 	/* pwr */
+@@ -1248,6 +1283,7 @@ int mx28evk_enet_gpio_init(void)
+ 
+ 	return 0;
+ }
++#endif
+ 
+ void mx28evk_enet_io_lowerpower_enter(void)
+ {
+@@ -1342,6 +1378,11 @@ void __init mx28evk_pins_init(void)
+ 
+ #if defined(CONFIG_FEC) || defined(CONFIG_FEC_MODULE)\
+ 	|| defined(CONFIG_FEC_L2SWITCH)
++	
++#ifdef CONFIG_MX28_ENET_ISSUE
++		gpio_request(MXS_PIN_TO_GPIO(PINID_ENET0_RX_CLK), "PHY_RESET");
++		gpio_direction_output(MXS_PIN_TO_GPIO(PINID_ENET0_RX_CLK), 1);
++#endif
+ 		mx28evk_init_pin_group(mx28evk_eth_pins,
+ 						ARRAY_SIZE(mx28evk_eth_pins));
+ #endif
+diff --git a/drivers/net/fec.c b/drivers/net/fec.c
+index 8994baf..ef65d1c 100644
+--- a/drivers/net/fec.c
++++ b/drivers/net/fec.c
+@@ -1508,14 +1508,50 @@ fec_restart(struct net_device *dev, int duplex)
+ 	unsigned long reg;
+ 	int val;
+ 
+-#ifdef CONFIG_ARCH_MXS
++#if defined(CONFIG_ARCH_MXS) && defined(CONFIG_MX28_ENET_ISSUE)
++	if (pdata && pdata->uninit)
++		ret = pdata->uninit();
++#else
+ 	if (pdata && pdata->init)
+ 		ret = pdata->init();
+ #endif
+ 
+ 	/* Whack a reset.  We should wait for this. */
+ 	writel(1, fep->hwp + FEC_ECNTRL);
+-	udelay(10);
++	while(readl(fep->hwp + FEC_ECNTRL)&1);
++
++#if defined(CONFIG_ARCH_MXS) && defined(CONFIG_MX28_ENET_ISSUE)
++	/* Enable MII mode */
++	if (duplex) {
++		/* MII enable / FD enable */
++		writel(OPT_FRAME_SIZE | 0x04, fep->hwp + FEC_R_CNTRL);
++		writel(0x04, fep->hwp + FEC_X_CNTRL);
++	} else {
++		/* MII enable / No Rcv on Xmit */
++		writel(OPT_FRAME_SIZE | 0x06, fep->hwp + FEC_R_CNTRL);
++		writel(0x0, fep->hwp + FEC_X_CNTRL);
++	}
++	fep->full_duplex = duplex;
++
++	reg = readl(fep->hwp + FEC_R_CNTRL);
++
++	/* Enable flow control and length check */
++	reg |= (0x40000000 | 0x00000020);
++
++	/* Check MII or RMII */
++	if (fep->phy_interface == PHY_INTERFACE_MODE_RMII)
++		reg |= 0x00000100;
++	else
++		reg &= ~0x00000100;
++
++	/* Check 10M or 100M */
++	if (fep->phy_dev && fep->phy_dev->speed == SPEED_100)
++		reg &= ~0x00000200; /* 100M */
++	else
++		reg |= 0x00000200;  /* 10M */
++
++	writel(reg, fep->hwp + FEC_R_CNTRL);
++#endif
+ 
+ 	/* Reset fec will reset MAC to zero, reconfig it again */
+ 	memcpy(&temp_mac, dev->dev_addr, ETH_ALEN);
+@@ -1557,6 +1593,7 @@ fec_restart(struct net_device *dev, int duplex)
+ 		}
+ 	}
+ 
++#ifndef CONFIG_MX28_ENET_ISSUE
+ 	/* Enable MII mode */
+ 	if (duplex) {
+ 		/* MII enable / FD enable */
+@@ -1591,6 +1628,8 @@ fec_restart(struct net_device *dev, int duplex)
+ 	writel(reg, fep->hwp + FEC_R_CNTRL);
+ 
+ #endif
++#endif
++
+ 	/* Set MII speed */
+ 	writel(fep->phy_speed, fep->hwp + FEC_MII_SPEED);
+ 
+@@ -1634,12 +1673,19 @@ fec_restart(struct net_device *dev, int duplex)
+ 
+ 	/* Enable interrupts we wish to service */
+ 	writel(FEC_DEFAULT_IMASK, fep->hwp + FEC_IMASK);
++
++#ifdef CONFIG_MX28_ENET_ISSUE
++	if (pdata && pdata->init)
++		ret = pdata->init();
++#endif
+ }
+ 
+ static void
+ fec_stop(struct net_device *dev)
+ {
+ 	struct fec_enet_private *fep = netdev_priv(dev);
++	struct fec_platform_data *pdata = fep->pdev->dev.platform_data;
++	unsigned int ret;
+ 
+ 	/* We cannot expect a graceful transmit stop without link !!! */
+ 	if (fep->link) {
+@@ -1674,6 +1720,11 @@ fec_stop(struct net_device *dev)
+ 
+ 	netif_stop_queue(dev);
+ 	fep->link = 0;
++
++#ifdef CONFIG_MX28_ENET_ISSUE
++	if (pdata && pdata->init)
++		ret = pdata->init();
++#endif
+ }
+ 
+ static int __devinit
+-- 
+2.3.5
+
