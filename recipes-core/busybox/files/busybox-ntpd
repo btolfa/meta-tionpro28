@@ -10,7 +10,7 @@
 # Description:       busybox-ntpd is a small and fast busybox ntp applet
 ### END INIT INFO
 
-DAEMON=/sbin/ntpd
+DAEMON=/usr/sbin/ntpd
 NAME=ntpd
 DESC="Busybox NTP Daemon"
 source /etc/busybox-ntpd.conf
