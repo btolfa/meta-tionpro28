@@ -26,24 +26,24 @@ case "$1" in
             echo "PEER needs to be specified"
         else
             start-stop-daemon -S -b -n $NAME -a $DAEMON -- $ARGS
-            echo "done."
+            echo "ntpd start: done."
         fi
         ;;
     stop)
         echo -n "stopping $DESC: $NAME... "
         start-stop-daemon -K -n $NAME
-        echo "done."
+        echo "ntpd stop: done."
         ;;
     restart)
         echo "restarting $DESC: $NAME... "
         $0 stop
         $0 start
-        echo "done."
+        echo "ntpd restart: done."
         ;;
     reload)
         echo -n "reloading $DESC: $NAME... "
         killall -HUP $(basename ${DAEMON})
-        echo "done."
+        echo "ntpd reload: done."
         ;;
     *)
         echo "Usage: $0 {start|stop|restart|reload}"

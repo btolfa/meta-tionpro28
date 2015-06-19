@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Restart ntpd after udhcpc event
+
+[ -z "$1" ] && echo "Error: should be called from udhcpc" && exit 1
+
+/etc/init.d/busybox-ntpd start
