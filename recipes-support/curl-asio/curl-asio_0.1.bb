@@ -4,7 +4,7 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://${WORKDIR}/git/COPYING;md5=6d1521564502ef112fbf069b87d54f0d"
 
-SRCREV = "81f337bc8b8ca6f463413b529cc5b0b9c8ebe47a"
+SRCREV = "c21ca5386758e34bd94a8a2437091214af936f57"
 SRC_URI = "git://github.com/btolfa/curl-asio.git"
 
 S = "${WORKDIR}/git"
