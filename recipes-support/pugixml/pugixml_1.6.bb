@@ -4,9 +4,7 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://${WORKDIR}/git/README.md;beginline=21;md5=b339f086b8738febdd0d31453f927ba9"
 
-SRC_URI = "git://github.com/zeux/pugixml.git"
-SRCREV = "9b8553bf4bd6f66048f63942a9ff9742b0b23355"
-
+SRC_URI = "git://github.com/zeux/pugixml.git;tag=v${PV}"
 
 S = "${WORKDIR}/git/scripts"
 
