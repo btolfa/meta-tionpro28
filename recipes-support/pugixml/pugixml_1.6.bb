@@ -11,3 +11,4 @@ S = "${WORKDIR}/git/scripts"
 inherit cmake
 
 FILES_${PN}-dev = "${libdir}/cmake/pugixml ${includedir}"
+RDEPENDS_${PN}-dev = ""
