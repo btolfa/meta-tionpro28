@@ -1,0 +1,27 @@
+From 6a7155c05e2d811bf36a70fc4a2ef8560eef4be1 Mon Sep 17 00:00:00 2001
+From: Tengiz Sharafiev <btolfa@gmail.com>
+Date: Mon, 17 Aug 2015 16:31:32 +0300
+Subject: [PATCH 2/2] Change name to dtb file
+
+---
+ include/configs/mx28evk.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/include/configs/mx28evk.h b/include/configs/mx28evk.h
+index 02368d7..c07e443 100644
+--- a/include/configs/mx28evk.h
++++ b/include/configs/mx28evk.h
+@@ -253,9 +253,8 @@
+ 		"fi\0" \
+ 	"script=boot.scr\0"	\
+ 	"image=zImage\0" \
+-	"console_fsl=ttyAM0\0" \
+ 	"console_mainline=ttyAMA0\0" \
+-	"fdt_file=imx28-evk.dtb\0" \
++	"fdt_file=imx28-tion-pro28.dtb\0" \
+ 	"fdt_addr=0x41000000\0" \
+ 	"boot_fdt=try\0" \
+ 	"ip_dyn=yes\0" \
+-- 
+2.4.3
+
