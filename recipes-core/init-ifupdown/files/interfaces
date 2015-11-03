@@ -8,6 +8,7 @@ iface lo inet loopback
 auto eth0
 iface eth0 inet dhcp
 hwaddress ether 40:D8:55:07:0C:9A
+hostname robot
 
 # CANBus setup
 auto can0
