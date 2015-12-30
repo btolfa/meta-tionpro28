@@ -1,12 +1,12 @@
-From fa20e7a1c3abb9d458f89e48b15ca84c40d50ce3 Mon Sep 17 00:00:00 2001
+From ecb97693907e0e9e6f5bcdda48e2e7e4df56ad5f Mon Sep 17 00:00:00 2001
 From: Tengiz Sharafiev <btolfa@gmail.com>
 Date: Mon, 28 Dec 2015 13:49:40 +0300
 Subject: [PATCH 2/2] Working device tree for Tion-Pro28
 
 ---
  arch/arm/boot/dts/Makefile       |   3 +-
- arch/arm/boot/dts/imx28-tion.dts | 459 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 461 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/imx28-tion.dts | 437 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 439 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/boot/dts/imx28-tion.dts
 
 diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
@@ -25,10 +25,10 @@ index 992736b..64e956a 100644
  	ste-nomadik-nhk15.dtb
 diff --git a/arch/arm/boot/dts/imx28-tion.dts b/arch/arm/boot/dts/imx28-tion.dts
 new file mode 100644
-index 0000000..2457c35
+index 0000000..e3062d1
 --- /dev/null
 +++ b/arch/arm/boot/dts/imx28-tion.dts
-@@ -0,0 +1,459 @@
+@@ -0,0 +1,437 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + *
@@ -219,12 +219,6 @@ index 0000000..2457c35
 +		};
 +
 +		apbx@80040000 {
-+			saif0: saif@80042000 {
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&saif0_pins_a>;
-+				status = "okay";
-+			};
-+
 +			lradc@80050000 {
 +				status = "okay";
 +				fsl,lradc-touchscreen-wires = <4>;
@@ -237,14 +231,6 @@ index 0000000..2457c35
 +				pinctrl-names = "default";
 +				pinctrl-0 = <&i2c0_pins_a>;
 +				status = "okay";
-+
-+				sgtl5000: codec@0a {
-+					compatible = "fsl,sgtl5000";
-+					reg = <0x0a>;
-+					VDDA-supply = <&reg_3p3v>;
-+					VDDIO-supply = <&reg_3p3v>;
-+					clocks = <&saif0>;
-+				};
 +
 +				at24@51 {
 +					compatible = "at24,24c32";
@@ -399,14 +385,6 @@ index 0000000..2457c35
 +            regulator-max-microvolt = <3300000>;
 +            regulator-always-on;
 +        };
-+	};
-+
-+	sound {
-+		compatible = "fsl,imx28-evk-sgtl5000",
-+			     "fsl,mxs-audio-sgtl5000";
-+		model = "imx28-evk-sgtl5000";
-+		saif-controllers = <&saif0 &saif1>;
-+		audio-codec = <&sgtl5000>;
 +	};
 +
 +	leds {
