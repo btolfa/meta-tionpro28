@@ -18,7 +18,7 @@ index 02368d7..c07e443 100644
 -	"console_fsl=ttyAM0\0" \
  	"console_mainline=ttyAMA0\0" \
 -	"fdt_file=imx28-evk.dtb\0" \
-+	"fdt_file=imx28-tion-pro28.dtb\0" \
++	"fdt_file=imx28-tion.dtb\0" \
  	"fdt_addr=0x41000000\0" \
  	"boot_fdt=try\0" \
  	"ip_dyn=yes\0" \
