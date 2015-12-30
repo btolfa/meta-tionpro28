@@ -1,0 +1,36 @@
+From 23f08c89cf3c1ca7aba27f2a7cbbb0b5a95af97d Mon Sep 17 00:00:00 2001
+From: Tengiz Sharafiev <btolfa@gmail.com>
+Date: Wed, 30 Dec 2015 12:08:44 +0300
+Subject: [PATCH 1/2] crypto: mxs-dcp - Initialize .statesize fields
+
+Initialize .statesize fields in order to avoid the following error on probe:
+
+mxs-dcp 80028000.dcp: Failed to register sha1 hash!
+mxs-dcp: probe of 80028000.dcp failed with error -22
+---
+ drivers/crypto/mxs-dcp.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/crypto/mxs-dcp.c b/drivers/crypto/mxs-dcp.c
+index 59ed54e..d51e7b3 100644
+--- a/drivers/crypto/mxs-dcp.c
++++ b/drivers/crypto/mxs-dcp.c
+@@ -836,6 +836,7 @@ static struct ahash_alg dcp_sha1_alg = {
+ 	.digest	= dcp_sha_digest,
+ 	.halg	= {
+ 		.digestsize	= SHA1_DIGEST_SIZE,
++        .statesize  = sizeof(struct sha1_state),
+ 		.base		= {
+ 			.cra_name		= "sha1",
+ 			.cra_driver_name	= "sha1-dcp",
+@@ -860,6 +861,7 @@ static struct ahash_alg dcp_sha256_alg = {
+ 	.digest	= dcp_sha_digest,
+ 	.halg	= {
+ 		.digestsize	= SHA256_DIGEST_SIZE,
++        .statesize  = sizeof(struct sha256_state),
+ 		.base		= {
+ 			.cra_name		= "sha256",
+ 			.cra_driver_name	= "sha256-dcp",
+-- 
+2.6.4
+

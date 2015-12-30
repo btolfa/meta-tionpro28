@@ -1,12 +1,12 @@
-From 0187144d6c2697ba2eded3cc6b06208ec65f5f26 Mon Sep 17 00:00:00 2001
+From fa20e7a1c3abb9d458f89e48b15ca84c40d50ce3 Mon Sep 17 00:00:00 2001
 From: Tengiz Sharafiev <btolfa@gmail.com>
 Date: Mon, 28 Dec 2015 13:49:40 +0300
-Subject: [PATCH] Working device tree for Tion-Pro28
+Subject: [PATCH 2/2] Working device tree for Tion-Pro28
 
 ---
  arch/arm/boot/dts/Makefile       |   3 +-
- arch/arm/boot/dts/imx28-tion.dts | 323 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 325 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/imx28-tion.dts | 459 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 461 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/boot/dts/imx28-tion.dts
 
 diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
@@ -25,10 +25,10 @@ index 992736b..64e956a 100644
  	ste-nomadik-nhk15.dtb
 diff --git a/arch/arm/boot/dts/imx28-tion.dts b/arch/arm/boot/dts/imx28-tion.dts
 new file mode 100644
-index 0000000..846aba6
+index 0000000..2457c35
 --- /dev/null
 +++ b/arch/arm/boot/dts/imx28-tion.dts
-@@ -0,0 +1,323 @@
+@@ -0,0 +1,459 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + *
@@ -67,13 +67,8 @@ index 0000000..846aba6
 +					&mmc0_cd_cfg &mmc0_sck_cfg>;
 +				bus-width = <4>;
 +                disable-wp;
++                vmmc-supply = <&reg_vddio_sd0>;
 +				status = "okay";
-+			};
-+
-+			ssp1: ssp@80012000 {
-+				compatible = "fsl,imx28-mmc";
-+				bus-width = <8>;
-+				wp-gpios = <&gpio0 28 0>;
 +			};
 +
 +			ssp2: ssp@80014000 {
@@ -100,13 +95,9 @@ index 0000000..846aba6
 +				hog_pins_a: hog@0 {
 +					reg = <0>;
 +					fsl,pinmux-ids = <
-+						MX28_PAD_SSP1_CMD__GPIO_2_13
-+						MX28_PAD_SSP1_DATA3__GPIO_2_15
-+						MX28_PAD_ENET0_RX_CLK__GPIO_4_13
-+						MX28_PAD_SSP1_SCK__GPIO_2_12
-+						MX28_PAD_LCD_RESET__GPIO_3_30
-+						MX28_PAD_AUART2_RX__GPIO_3_8
-+						MX28_PAD_AUART2_TX__GPIO_3_9
++                        MX28_PAD_ENET0_RX_CLK__GPIO_4_13
++                        MX28_PAD_AUART3_CTS__GPIO_3_14
++                        MX28_PAD_AUART3_RTS__GPIO_3_15
 +					>;
 +					fsl,drive-strength = <MXS_DRIVE_4mA>;
 +					fsl,voltage = <MXS_VOLTAGE_HIGH>;
@@ -146,12 +137,51 @@ index 0000000..846aba6
 +					fsl,voltage = <MXS_VOLTAGE_HIGH>;
 +					fsl,pull-up = <MXS_PULL_DISABLE>;
 +				};
++
++			    can0_pins_b: can0@0 {
++				    reg = <0>;
++				    fsl,pinmux-ids = <
++                        MX28_PAD_AUART3_RX__CAN0_TX
++                        MX28_PAD_AUART3_TX__CAN0_RX
++				    >;
++				    fsl,drive-strength = <MXS_DRIVE_4mA>;
++				    fsl,voltage = <MXS_VOLTAGE_HIGH>;
++				    fsl,pull-up = <MXS_PULL_DISABLE>;
++			    };
++
++                port1_pins: port1_pins@0 {
++                    reg = <0>;
++					fsl,pinmux-ids = <
++                        MX28_PAD_SSP1_SCK__GPIO_2_12
++                        MX28_PAD_SSP1_CMD__GPIO_2_13
++                        MX28_PAD_SSP1_DATA0__GPIO_2_14
++                        MX28_PAD_SSP1_DATA3__GPIO_2_15
++					>;
++					fsl,drive-strength = <MXS_DRIVE_4mA>;
++					fsl,voltage = <MXS_VOLTAGE_HIGH>;
++					fsl,pull-up = <MXS_PULL_DISABLE>;
++                };
++
++                port2_pins: port2_pins@0 {
++                    reg = <0>;
++					fsl,pinmux-ids = <
++                        MX28_PAD_SSP0_DATA4__GPIO_2_4
++                        MX28_PAD_SSP0_DATA5__GPIO_2_5
++                        MX28_PAD_SSP0_DATA6__GPIO_2_6
++                        MX28_PAD_SSP0_DATA7__GPIO_2_7
++					>;
++					fsl,drive-strength = <MXS_DRIVE_4mA>;
++					fsl,voltage = <MXS_VOLTAGE_HIGH>;
++					fsl,pull-up = <MXS_PULL_DISABLE>;
++                };
++
 +			};
 +
 +			lcdif@80030000 {
 +				pinctrl-names = "default";
 +				pinctrl-0 = <&lcdif_18bit_pins_a
 +					     &lcdif_pins_evk>;
++                lcd-supply = <&reg_lcd_3v3>;
 +				display = <&display0>;
 +				status = "okay";
 +
@@ -180,20 +210,10 @@ index 0000000..846aba6
 +				};
 +			};
 +            
-+			can0_pins_b: can0@0 {
-+				reg = <0>;
-+				fsl,pinmux-ids = <
-+                    MX28_PAD_AUART3_RX__CAN0_TX
-+                    MX28_PAD_AUART3_TX__CAN0_RX
-+				>;
-+				fsl,drive-strength = <MXS_DRIVE_4mA>;
-+				fsl,voltage = <MXS_VOLTAGE_HIGH>;
-+				fsl,pull-up = <MXS_PULL_DISABLE>;
-+			};
-+
 +			can0: can@80032000 {
 +				pinctrl-names = "default";
 +				pinctrl-0 = <&can0_pins_b>;
++                xceiver-supply = <&reg_can_3v3>;
 +				status = "okay";
 +			};
 +		};
@@ -252,6 +272,19 @@ index 0000000..846aba6
 +				status = "okay";
 +			};
 +
++			auart1: serial@8006c000 {
++                pinctrl-names = "default";
++                pinctrl-0 = <&auart1_pins_a>;
++                fsl,uart-has-rtscts;
++                status = "okay";
++            };
++
++			auart2: serial@8006e000 {
++                pinctrl-names = "default";
++                pinctrl-0 = <&auart2_pins_a>;
++                status = "okay";
++            };
++
 +			usbphy0: usbphy@8007c000 {
 +				status = "okay";
 +			};
@@ -265,12 +298,15 @@ index 0000000..846aba6
 +	ahb@80080000 {
 +		usb0: usb@80080000 {
 +			pinctrl-names = "default";
-+			pinctrl-0 = <&usb0_id_pins_a>;
++			pinctrl-0 = <&usb0_pins_a>;
 +			vbus-supply = <&reg_usb0_vbus>;
++            dr_mode = "host";
 +			status = "okay";
 +		};
 +
 +		usb1: usb@80090000 {
++            pinctrl-names = "default";
++            pinctrl-0 = <&usb1_pins_a>;
 +			vbus-supply = <&reg_usb1_vbus>;
 +			status = "okay";
 +		};
@@ -279,6 +315,9 @@ index 0000000..846aba6
 +			phy-mode = "rmii";
 +			pinctrl-names = "default";
 +			pinctrl-0 = <&mac0_pins_a>;
++            phy-supply = <&reg_fec_3v3>;
++            phy-reset-gpios = <&gpio4 13 0>;
++            phy-reset-duration = <100>;
 +			status = "okay";
 +		};
 +
@@ -286,6 +325,7 @@ index 0000000..846aba6
 +			phy-mode = "rmii";
 +			pinctrl-names = "default";
 +			pinctrl-0 = <&mac1_pins_a>;
++            phy-supply = <&reg_fec_3v3>;
 +			status = "okay";
 +		};
 +	};
@@ -304,9 +344,27 @@ index 0000000..846aba6
 +			regulator-always-on;
 +		};
 +
-+		reg_usb0_vbus: regulator@1 {
++        reg_vddio_sd0: regulator@1 {
++            compatible = "regulator-fixed";
++            reg = <1>;
++            regulator-name = "vddio-sd0";
++            regulator-min-microvolt = <3300000>;
++            regulator-max-microvolt = <3300000>;
++            regulator-always-on;
++        };
++
++        reg_fec_3v3: regulator@2 {
++            compatible = "regulator-fixed";
++            reg = <2>;
++            regulator-name = "fec-3v3";
++            regulator-min-microvolt = <3300000>;
++            regulator-max-microvolt = <3300000>;
++            regulator-always-on;
++        };
++
++		reg_usb0_vbus: regulator@3 {
 +			compatible = "regulator-fixed";
-+			reg = <1>;
++			reg = <3>;
 +			regulator-name = "usb0_vbus";
 +			regulator-min-microvolt = <5000000>;
 +			regulator-max-microvolt = <5000000>;
@@ -314,15 +372,33 @@ index 0000000..846aba6
 +			enable-active-high;
 +		};
 +
-+		reg_usb1_vbus: regulator@2 {
++		reg_usb1_vbus: regulator@4 {
 +			compatible = "regulator-fixed";
-+			reg = <2>;
++			reg = <4>;
 +			regulator-name = "usb1_vbus";
 +			regulator-min-microvolt = <5000000>;
 +			regulator-max-microvolt = <5000000>;
 +			gpio = <&gpio3 15 0>;
 +			enable-active-high;
 +		};
++
++        reg_lcd_3v3: regulator@5 {
++            compatible = "regulator-fixed";
++            reg = <5>;
++            regulator-name = "lcd-3v3";
++            regulator-min-microvolt = <3300000>;
++            regulator-max-microvolt = <3300000>;
++            regulator-always-on;
++        };
++
++        reg_can_3v3: regulator@6 {
++            compatible = "regulator-fixed";
++            reg = <6>;
++            regulator-name = "can-3v3";
++            regulator-min-microvolt = <3300000>;
++            regulator-max-microvolt = <3300000>;
++            regulator-always-on;
++        };
 +	};
 +
 +	sound {
@@ -344,6 +420,66 @@ index 0000000..846aba6
 +			linux,default-trigger = "heartbeat";
 +		};
 +	};
++
++    port1 {
++        compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&port1_pins>;
++
++		rs232_off {
++			label = "port1:rs232:off";
++			gpios = <&gpio2 12 1>;
++            default-state = "off";
++		};
++        
++		rs485_off {
++			label = "port1:rs485:off";
++			gpios = <&gpio2 13 1>;
++            default-state = "on";
++        };
++
++	    rs485_re {
++			label = "port1:rs485:re";
++			gpios = <&gpio2 14 1>;
++            default-state = "on";
++		};
++
++		rs422_de {
++			label = "port1:rs422:de";
++			gpios = <&gpio2 15 1>;
++            default-state = "on";
++		};
++    };
++
++    port2 {
++        compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&port2_pins>;
++
++		rs232_off {
++			label = "port2:rs232:off";
++			gpios = <&gpio2 4 1>;
++            default-state = "off";
++		};
++        
++		rs485_off {
++			label = "port2:rs485:off";
++			gpios = <&gpio2 5 1>;
++            default-state = "on";
++        };
++
++	    rs485_re {
++			label = "port2:rs485:re";
++			gpios = <&gpio2 6 1>;
++            default-state = "on";
++		};
++
++		rs422_de {
++			label = "port2:rs422:de";
++			gpios = <&gpio2 7 1>;
++            default-state = "on";
++		};
++    };
 +
 +	backlight {
 +		compatible = "pwm-backlight";
